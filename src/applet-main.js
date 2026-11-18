@@ -616,6 +616,28 @@ function observeLazyImages(rootEl) {
 }
 
 let allMovies = [];
+let movieIndexMap = new Map();
+function rebuildMovieIndex(movies) {
+    movieIndexMap = new Map();
+    if (!Array.isArray(movies)) return;
+    for (let i = 0; i < movies.length; i++) {
+        const m = movies[i];
+        if (!m) continue;
+        movieIndexMap.set(m, i);
+        if (!m._searchText) {
+            const castStr = typeof m.cast === 'string'
+                ? m.cast
+                : (Array.isArray(m.cast) ? m.cast.join(' ') : '');
+            m._searchText = `${m.title || ''} ${m.name || ''} ${m.category || ''} ${castStr}`.toLowerCase();
+        }
+        if (m._catLower === undefined) {
+            m._catLower = m.category ? String(m.category).toLowerCase() : '';
+        }
+    }
+}
+let movieSearchDebounceTimer = null;
+let movieSearchSeq = 0;
+let galleryLazyObserver = null;
 let isInCategoryView = false;
 let isInCloudStreamView = false;
 let isInCommentView = false;
@@ -721,6 +743,7 @@ async function syncMoviesFromGitHub(isManual = false) {
                 const hasChanged = (countDiff !== 0) || isFirstDiff || isLastDiff || isManual;
 
                 allMovies = freshMovies;
+                rebuildMovieIndex(allMovies);
                 saveMoviesToDB(freshMovies);
 
                 if (hasChanged) {
@@ -792,6 +815,7 @@ async function fetchMovies() {
 
         if (initialMovies && Array.isArray(initialMovies) && initialMovies.length > 0) {
             allMovies = initialMovies;
+            rebuildMovieIndex(allMovies);
             hasLoadedAndRendered = true;
             if (!checkInitialRoute()) {
                 await renderContent(allMovies);
@@ -807,6 +831,7 @@ async function fetchMovies() {
         console.warn("Error in fetchMovies:", err);
         if (!hasLoadedAndRendered && BUNDLED_CATALOG && BUNDLED_CATALOG.length > 0) {
             allMovies = BUNDLED_CATALOG;
+            rebuildMovieIndex(allMovies);
             if (!checkInitialRoute()) {
                 await renderContent(allMovies);
             }
@@ -6124,7 +6149,7 @@ window.handleMovieClick = function(movieObj) {
 function renderCard(m, container) {
     const card = document.createElement('div');
     card.className = 'movie-card';
-    const globalIndex = allMovies.indexOf(m);
+    const globalIndex = movieIndexMap.has(m) ? movieIndexMap.get(m) : allMovies.indexOf(m);
     if (globalIndex >= 0) {
         card.dataset.movieIndex = String(globalIndex);
     }
@@ -6140,7 +6165,7 @@ function renderCard(m, container) {
     card.innerHTML = `
         <span class="movie-card-lock-badge"><i class="fa-solid fa-crown"></i> VIP</span>
         <span class="rating-badge">★ ${m.rating || '0.0'}</span>
-        <img data-src="${posterUrl}" alt="">
+        <img data-src="${posterUrl}" alt="" decoding="async">
         <div class="movie-title-container">
             <div class="movie-title">${titleText}</div>
         </div>
@@ -6184,6 +6209,10 @@ async function renderContent(movies) {
     if (isInGameView || isInSubscriptionView || isInCloudStreamView || isInCommentView || isInGpsCameraView || isInAdminView) {
         return;
     }
+    if (galleryLazyObserver) {
+        galleryLazyObserver.disconnect();
+        galleryLazyObserver = null;
+    }
     isPlayerView = false;
     isInCategoryView = false;
     currentCategoryName = "all";
@@ -6196,8 +6225,14 @@ async function renderContent(movies) {
     if (!container) return;
     container.innerHTML = "";
 
+    const rootFragment = document.createDocumentFragment();
+
     // 0. Netflix-Style VIP Subscription Status Strip
-    container.insertAdjacentHTML('beforeend', buildHomeVipStripHtml());
+    const stripWrapper = document.createElement('div');
+    stripWrapper.innerHTML = buildHomeVipStripHtml();
+    while (stripWrapper.firstChild) {
+        rootFragment.appendChild(stripWrapper.firstChild);
+    }
 
     // 1. Continue Watching section at top (if history exists)
     const history = getContinueWatchingHistory();
@@ -6213,20 +6248,30 @@ async function renderContent(movies) {
             </div>
             <div class="horizontal-scroll-container" id="row-continue-watching"></div>
         `;
-        container.appendChild(continueDiv);
-
         const continueRow = continueDiv.querySelector('.horizontal-scroll-container');
-        history.forEach(m => renderCard(m, continueRow));
+        const rowFrag = document.createDocumentFragment();
+        history.forEach(m => renderCard(m, rowFrag));
+        continueRow.appendChild(rowFrag);
+        rootFragment.appendChild(continueDiv);
     }
 
-    // 2. Render each category (up to 10 movies per row)
-    const categories = [...new Set(movies.map(m => m.category).filter(Boolean))];
+    // 2. Group movies by category in a single O(N) pass (up to 10 movies per row)
+    const categoryBuckets = new Map();
+    for (let i = 0; i < movies.length; i++) {
+        const m = movies[i];
+        if (!m || !m.category) continue;
+        let bucket = categoryBuckets.get(m.category);
+        if (!bucket) {
+            bucket = [];
+            categoryBuckets.set(m.category, bucket);
+        }
+        if (bucket.length < 10) {
+            bucket.push(m);
+        }
+    }
 
-    categories.forEach(cat => {
-        const catMovies = movies.filter(m => m.category === cat);
-        if (catMovies.length === 0) return;
-
-        const limitedMovies = catMovies.slice(0, 10);
+    categoryBuckets.forEach((limitedMovies, cat) => {
+        if (limitedMovies.length === 0) return;
 
         const sectionDiv = document.createElement('div');
         sectionDiv.style.marginBottom = "5px";
@@ -6242,12 +6287,14 @@ async function renderContent(movies) {
             <div class="horizontal-scroll-container" id="row-${cat.replace(/\s+/g, '_')}"></div>
         `;
 
-        container.appendChild(sectionDiv);
-
         const rowContainer = sectionDiv.querySelector('.horizontal-scroll-container');
-        limitedMovies.forEach(m => renderCard(m, rowContainer));
+        const rowFrag = document.createDocumentFragment();
+        limitedMovies.forEach(m => renderCard(m, rowFrag));
+        rowContainer.appendChild(rowFrag);
+        rootFragment.appendChild(sectionDiv);
     });
 
+    container.appendChild(rootFragment);
     homeCachedHTML = container.innerHTML;
 }
 
@@ -6659,6 +6706,12 @@ window.checkAppUpdate = function(e) {
 };
 
 window.clearTopSearch = function() {
+    if (movieSearchDebounceTimer) {
+        clearTimeout(movieSearchDebounceTimer);
+        movieSearchDebounceTimer = null;
+    }
+    movieSearchSeq++;
+
     const searchInput = document.getElementById('searchInput');
     const clearBtn = document.getElementById('searchClearBtn');
     if (searchInput) {
@@ -6667,14 +6720,28 @@ window.clearTopSearch = function() {
     }
     if (clearBtn) clearBtn.style.display = 'none';
 
+    const restoreHomeInstant = () => {
+        const container = document.getElementById('mainContainer');
+        if (homeCachedHTML && container) {
+            if (galleryLazyObserver) {
+                galleryLazyObserver.disconnect();
+                galleryLazyObserver = null;
+            }
+            container.innerHTML = homeCachedHTML;
+            rebindHomeCardClicks();
+        } else {
+            renderContent(allMovies);
+        }
+    };
+
     if (isInCommentView) {
         isInCommentView = false;
         updateHeaderButton();
-        renderContent(allMovies);
+        restoreHomeInstant();
     } else if (isInSubscriptionView) {
         isInSubscriptionView = false;
         updateHeaderButton();
-        renderContent(allMovies);
+        restoreHomeInstant();
     } else if (isInCloudStreamView) {
         if (isPlayerView) {
             destroyCurrentPlayer();
@@ -6695,7 +6762,7 @@ window.clearTopSearch = function() {
         }
         isInCategoryView = false;
         updateHeaderButton();
-        renderContent(allMovies);
+        restoreHomeInstant();
     }
 };
 
@@ -6772,7 +6839,48 @@ window.handleMenuShareApp = function(e) {
     window.location.href = "share.html";
 };
 
-window.handleSearchInput = async function() {
+function renderGalleryChunked(items, gallery, batchSize = 40) {
+    if (galleryLazyObserver) {
+        galleryLazyObserver.disconnect();
+        galleryLazyObserver = null;
+    }
+
+    let renderedCount = 0;
+    const appendNextBatch = () => {
+        if (renderedCount >= items.length) return;
+        const nextEnd = Math.min(renderedCount + batchSize, items.length);
+        const frag = document.createDocumentFragment();
+        for (let i = renderedCount; i < nextEnd; i++) {
+            renderCard(items[i], frag);
+        }
+        renderedCount = nextEnd;
+
+        const existingSentinel = gallery.querySelector('#galleryLazySentinel');
+        if (existingSentinel) existingSentinel.remove();
+
+        gallery.appendChild(frag);
+
+        if (renderedCount < items.length) {
+            const sentinel = document.createElement('div');
+            sentinel.id = 'galleryLazySentinel';
+            sentinel.style.gridColumn = '1 / -1';
+            sentinel.style.height = '24px';
+            gallery.appendChild(sentinel);
+
+            galleryLazyObserver = new IntersectionObserver((entries) => {
+                if (entries[0] && entries[0].isIntersecting) {
+                    if (galleryLazyObserver) galleryLazyObserver.unobserve(sentinel);
+                    appendNextBatch();
+                }
+            }, { rootMargin: '350px 0px' });
+            galleryLazyObserver.observe(sentinel);
+        }
+    };
+
+    appendNextBatch();
+}
+
+window.handleSearchInput = function() {
     const searchInput = document.getElementById('searchInput');
     const term = searchInput ? searchInput.value.trim() : '';
     const clearBtn = document.getElementById('searchClearBtn');
@@ -6784,25 +6892,52 @@ window.handleSearchInput = async function() {
         return;
     }
 
-    if (term === "") {
-        if (isPlayerView) {
-            destroyCurrentPlayer();
-            isPlayerView = false;
-            currentPlayingMovie = null;
-        }
-        isInCategoryView = false;
-        updateHeaderButton();
-        await renderContent(allMovies);
-    } else {
-        if (isPlayerView) {
-            destroyCurrentPlayer();
-            isPlayerView = false;
-            currentPlayingMovie = null;
-        }
-        isInCategoryView = true;
-        updateHeaderButton();
-        await filterAndDisplay(term);
+    if (movieSearchDebounceTimer) {
+        clearTimeout(movieSearchDebounceTimer);
+        movieSearchDebounceTimer = null;
     }
+
+    const seq = ++movieSearchSeq;
+    movieSearchDebounceTimer = setTimeout(() => {
+        movieSearchDebounceTimer = null;
+        if (seq !== movieSearchSeq) return;
+
+        requestAnimationFrame(async () => {
+            if (seq !== movieSearchSeq) return;
+            const latestInput = document.getElementById('searchInput');
+            const latestTerm = latestInput ? latestInput.value.trim() : term;
+
+            if (latestTerm === "") {
+                if (isPlayerView) {
+                    destroyCurrentPlayer();
+                    isPlayerView = false;
+                    currentPlayingMovie = null;
+                }
+                isInCategoryView = false;
+                updateHeaderButton();
+                const container = document.getElementById('mainContainer');
+                if (homeCachedHTML && container) {
+                    if (galleryLazyObserver) {
+                        galleryLazyObserver.disconnect();
+                        galleryLazyObserver = null;
+                    }
+                    container.innerHTML = homeCachedHTML;
+                    rebindHomeCardClicks();
+                } else {
+                    await renderContent(allMovies);
+                }
+            } else {
+                if (isPlayerView) {
+                    destroyCurrentPlayer();
+                    isPlayerView = false;
+                    currentPlayingMovie = null;
+                }
+                isInCategoryView = true;
+                updateHeaderButton();
+                await filterAndDisplay(latestTerm);
+            }
+        });
+    }, 220);
 };
 
 window.filterAndDisplay = async function(term, isExactCategory = false) {
@@ -6811,8 +6946,13 @@ window.filterAndDisplay = async function(term, isExactCategory = false) {
     const lowerTerm = term.toLowerCase();
 
     const filtered = allMovies.filter(m => {
+        if (!m) return false;
         if (isExactCategory) {
-            return m.category && m.category.toLowerCase() === lowerTerm;
+            const cat = m._catLower !== undefined ? m._catLower : (m.category ? m.category.toLowerCase() : '');
+            return cat === lowerTerm;
+        }
+        if (m._searchText !== undefined) {
+            return m._searchText.includes(lowerTerm);
         }
         return (m.title && m.title.toLowerCase().includes(lowerTerm)) || 
             (m.name && m.name.toLowerCase().includes(lowerTerm)) ||
@@ -6820,7 +6960,7 @@ window.filterAndDisplay = async function(term, isExactCategory = false) {
             (m.cast && (typeof m.cast === 'string' ? m.cast.toLowerCase().includes(lowerTerm) : Array.isArray(m.cast) && m.cast.join(' ').toLowerCase().includes(lowerTerm)));
     });
 
-    const displayTitle = isExactCategory ? `${term}` : `Search Results`;
+    const displayTitle = isExactCategory ? `${term}` : `Search Results (${filtered.length})`;
 
     container.innerHTML = `
         <div class="section-header">
@@ -6840,7 +6980,7 @@ window.filterAndDisplay = async function(term, isExactCategory = false) {
         return;
     }
 
-    filtered.forEach(m => renderCard(m, gallery));
+    renderGalleryChunked(filtered, gallery, 40);
 };
 
 // Filter and display all movies for a clicked cast member
@@ -6922,7 +7062,7 @@ window.displayMoviesByCast = async function(actorName) {
         return;
     }
 
-    filtered.forEach(m => renderCard(m, grid));
+    renderGalleryChunked(filtered, grid, 40);
 };
 
 // Ensure microphone permission is granted across Android native and Web browsers

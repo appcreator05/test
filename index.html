@@ -536,6 +536,8 @@
             border-radius: 8px; 
             outline: none; 
             font-size: 16px; 
+            user-select: text;
+            -webkit-user-select: text;
         }
 
         #micBtn {
@@ -4895,7 +4897,7 @@
     
     <div class="search-wrapper">
         <button id="micBtn" onclick="startVoiceSearch()"><i class="fa-solid fa-microphone"></i></button>
-        <input autocomplete="off" type="text" id="searchInput" placeholder="Enter Movie Name or Cast..." oninput="handleSearchInput()" onkeyup="handleSearchInput()">
+        <input autocomplete="off" type="text" id="searchInput" placeholder="Enter Movie Name or Cast..." oninput="handleSearchInput()">
         <button id="searchClearBtn" onclick="clearTopSearch()" style="position: absolute; right: 10px; background: none; border: none; color: #8b949e; cursor: pointer; display: none; font-size: 16px; z-index: 2;"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
