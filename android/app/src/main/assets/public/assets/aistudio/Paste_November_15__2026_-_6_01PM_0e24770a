@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MovieApp.in</title>
+    <!-- FontAwesome 6 for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    
+    <style>
+        /* CSS Reset & Variables */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        /* Top Header Container */
+        .header-container { 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #1e1e2f;
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            padding: 10px 15px;
+            box-sizing: border-box;
+            z-index: 999;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+            transition: left 0.3s ease, width 0.3s ease;
+        }
+
+        @media (min-width: 769px) {
+            .header-container {
+                left: 260px;
+                width: calc(100% - 260px);
+            }
+        }
+        
+        #menuToggle { 
+            background: #00d2ff; 
+            color: #1e1e2f; 
+            padding: 10px 14px; 
+            border-radius: 8px; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 90px;
+            justify-content: center;
+        }
+
+        /* Search Bar & Mic Wrapper */
+        .search-wrapper {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        #searchInput { 
+            width: 100%;
+            padding: 10px 15px 10px 45px;
+            background: #2a2a3d; 
+            color: white; 
+            border: 1px solid #3d3d5c; 
+            border-radius: 8px; 
+            outline: none; 
+            font-size: 16px; 
+        }
+
+        #micBtn {
+            position: absolute;
+            left: 12px;
+            background: transparent;
+            border: none;
+            color: #b0b3b8;
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 2;
+        }
+        #micBtn.listening {
+            color: #ff4757;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* Subscription Popup CSS */
+        #subModalOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999999;
+            backdrop-filter: blur(4px);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .sub-modal-box {
+            background-color: #0d1117;
+            width: 90%;
+            max-width: 380px;
+            border-radius: 16px;
+            padding: 25px 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border: 1px solid #30363d;
+        }
+
+        .sub-icon-container {
+            width: 50px;
+            height: 50px;
+            background-color: #e20653;
+            border-radius: 14px;
+            margin: 0 auto 15px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 22px;
+        }
+
+        .sub-modal-box h3 {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .sub-modal-box p {
+            font-size: 14px;
+            color: #8b949e;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        .sub-btn-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .sub-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-cancel {
+            background-color: #21262d;
+            color: #c9d1d9;
+        }
+        .btn-cancel:hover {
+            background-color: #30363d;
+        }
+
+        .btn-subscribe {
+            background-color: #e20653;
+            color: white;
+        }
+        .btn-subscribe:hover {
+            background-color: #c50447;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 260px;
+            background-color: #1e1e2f;
+            color: #fff;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translate3d(-260px, 0, 0);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            will-change: transform;
+            backface-visibility: hidden;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+        }
+
+        @media (min-width: 769px) {
+            .sidebar {
+                transform: translate3d(0, 0, 0);
+            }
+        }
+
+        .sidebar.active {
+            transform: translate3d(0, 0, 0);
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.4rem;
+            color: #00d2ff;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .close-btn {
+                display: block;
+            }
+        }
+
+        /* Sidebar Navigation Links */
+        .sidebar-menu {
+            list-style: none;
+            padding: 15px 0;
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 20px;
+            color: #b0b3b8;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .sidebar-menu a i {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: #00d2ff;
+            color: #1e1e2f;
+            border-radius: 0 25px 25px 0;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+
+        /* Sidebar Overlay for Mobile */
+        #sidebarOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease;
+            z-index: 998;
+        }
+        #sidebarOverlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* User Profile / Active Count Footer inside Sidebar */
+        .sidebar-footer-profile {
+            padding: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: #171724;
+            text-align: center;
+            color: #ffc107;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            margin-left: 0;
+            padding: 5px;
+            margin-top: 70px;
+            flex-grow: 1;
+            transition: margin 0.3s ease;
+        }
+
+        @media (min-width: 769px) {
+            .main-content {
+                margin-left: 260px;
+            }
+        }
+
+        /* Section & Gallery Design */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 2px 0 1px 0;
+            padding-left: 5px;
+        }
+
+        .section-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-bar {
+            width: 4px;
+            height: 18px;
+            background: #00d2ff;
+            border-radius: 2px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .show-all-btn {
+            background: transparent;
+            color: #fff;
+            border: 1px solid #00d2ff;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .show-all-btn:hover {
+            background: #00d2ff;
+            color: #1e1e2f;
+        }
+
+        .horizontal-scroll-container {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            padding: 5px 0 15px 0;
+            scrollbar-width: none;
+        }
+
+        .horizontal-scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .gallery-grid { 
+            display: grid; 
+            gap: 10px; 
+            grid-template-columns: repeat(3, 1fr); 
+        }
+        @media (min-width: 500px) { .gallery-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (min-width: 768px) { .gallery-grid { grid-template-columns: repeat(5, 1fr); } }
+        @media (min-width: 1024px) { .gallery-grid { grid-template-columns: repeat(6, 1fr); } }
+        
+        .movie-card { 
+            position: relative; 
+            background: #1a1a1a; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            cursor: pointer;
+            content-visibility: auto;
+            contain-intrinsic-size: 240px;
+            flex: 0 0 130px;
+            min-width: 130px;
+        }
+
+        @media (min-width: 500px) {
+            .movie-card {
+                flex: 0 0 150px;
+                min-width: 150px;
+            }
+        }
+
+        .gallery-grid .movie-card {
+            flex: unset;
+            min-width: unset;
+            width: 100%;
+        }
+
+        .movie-card:hover { transform: scale(1.02); transition: transform 0.2s ease; }
+        
+        .movie-card img { 
+            width: 100%; 
+            aspect-ratio: 2 / 3; 
+            object-fit: cover; 
+            display: block; 
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .movie-card img.loaded {
+            opacity: 1;
+        }
+        
+        .rating-badge { 
+            position: absolute; 
+            top: 5px; 
+            right: 5px; 
+            background: rgba(0, 0, 0, 0.7); 
+            color: #ffc107; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            font-size: 10px; 
+            font-weight: bold; 
+            border: 1px solid #ffc107; 
+            z-index: 1; 
+        }
+        
+        .movie-title-container { width: 100%; padding: 8px 5px; overflow: hidden; white-space: nowrap; box-sizing: border-box; }
+        .movie-title { display: inline-block; padding-left: 100%; animation: marquee 10s linear infinite; font-size: 11px; }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+    </style>
+</head>
+<body>
+
+<!-- Subscription Alert Modal Box -->
+<div id="subModalOverlay">
+    <div class="sub-modal-box">
+        <div class="sub-icon-container">
+            <i class="fa-solid fa-crown"></i>
+        </div>
+        <h3>Subscription Alert!</h3>
+        <p>Please subscribe a plan to view our paid items</p>
+        <div class="sub-btn-group">
+            <button class="sub-btn btn-cancel" onclick="closeSubModal()">Cancel</button>
+            <button class="sub-btn btn-subscribe" onclick="handleSubscribeNow()">Subscribe Now</button>
+        </div>
+    </div>
+</div>
+
+<!-- Sidebar Overlay for Mobile -->
+<div id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- Sidebar Container -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h2>MovieApp.in</h2>
+        <button class="close-btn" id="closeBtn" onclick="toggleSidebar()">
+    <i class="fa-solid fa-xmark"></i>
+</button>
+    </div>
+
+    <ul class="sidebar-menu">
+        <li><a href="go:hometest"><i class="fa-solid fa-house"></i> Home</a></li>
+            <li><a href="go:sub2"><i class="fa-solid fa-crown"></i> Subscription</a></li>
+            <li><a href="go:gps"><i class="fa-solid fa-camera"></i> GPS Map Camera</a></li>
+            <li><a href="go:game"><i class="fa-solid fa-gamepad"></i> Game</a></li>
+            <li><a href="go:ytnew"><i class="fa-solid fa-film"></i> Unlimited Movie</a></li>
+            <li><a href="go:Reels"><i class="fa-solid fa-video"></i> Shorts</a></li>
+            <li><a href="go:music2"><i class="fa-solid fa-music"></i> Online Music</a></li>
+            <li><a href="go:QR"><i class="fa-solid fa-qrcode"></i> QR Scanner</a></li>
+            <li><a href="go:settings"><i class="fa-solid fa-gear"></i> Settings</a></li>
+            <li><a href="http://action_share"><i class="fa-solid fa-share-nodes"></i> Share App</a></li>
+            <li><a href="go:extra"><i class="fa-solid fa-toolbox"></i> Extra Tools</a></li>
+            <li><a href="go:comment"><i class="fa-solid fa-comment-dots"></i> Comment</a></li>
+            <li><a href="go:validity"><i class="fa-solid fa-calendar-check"></i> Validity</a></li>
+<li><a href="https://www.movieapp.in" target="_blank"><i class="fa-solid fa-rotate"></i> Update App</a></li>
+            <li><a href="http://action_exit"><i class="fa-solid fa-right-from-bracket"></i> Exit App</a></li>
+            <li><a href="go:admin"><i class="fa-solid fa-user-shield"></i> Admin</a></li>
+    </ul>
+
+    <div class="sidebar-footer-profile">
+        <i class="fa-solid fa-user-circle" style="font-size: 26px; display: block; margin-bottom: 4px;"></i>
+        <span>Active User</span>
+        <div style="margin-top: 6px; font-size: 12px; color: #fff;">
+            <i class="fa-solid fa-eye"></i> Active: <span id="activeCount">0</span>
+        </div>
+    </div>
+</aside>
+
+<!-- Top Header Container -->
+<div class="header-container">
+    <button id="menuToggle" onclick="handleMenuBtnClick()">
+        <i class="fa-solid fa-bars" id="menuIcon"></i> 
+        <span id="menuBtnText">Menu</span>
+    </button>
+    <div class="search-wrapper">
+        <button id="micBtn" onclick="startVoiceSearch()" title="Voice Search"><i class="fa-solid fa-microphone"></i></button>
+        <input autocomplete="off" type="text" id="searchInput" placeholder="Search by title or cast..." onkeyup="handleSearch()">
+    </div>
+</div>
+
+<!-- Main Content Area -->
+<main class="main-content" id="mainContainer">
+    <div id="movieGallery" class="gallery-grid" style="padding: 20px; text-align: center;">Loading movies...</div>
+</main>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+let dbCache;
+let homeCachedHTML = "";
+let isUserSubscribed = false; 
+const memoryImageCache = {};
+
+const openDB = () => {
+    return new Promise((resolve, reject) => {
+        if (dbCache) return resolve();
+        const request = indexedDB.open("MoviePosterDB", 1);
+        request.onupgradeneeded = (e) => {
+            let db = e.target.result;
+            if (!db.objectStoreNames.contains("images")) {
+                db.createObjectStore("images");
+            }
+        };
+        request.onsuccess = (e) => {
+            dbCache = e.target.result;
+            resolve();
+        };
+        request.onerror = reject;
+    });
+};
+
+async function getCachedImage(url) {
+    return new Promise((resolve) => {
+        if (!dbCache) return resolve(null);
+        const tx = dbCache.transaction("images", "readonly");
+        const store = tx.objectStore("images");
+        const req = store.get(url);
+        req.onsuccess = () => {
+            if (req.result) {
+                resolve(URL.createObjectURL(req.result));
+            } else {
+                resolve(null);
+            }
+        };
+        req.onerror = () => resolve(null);
+    });
+}
+
+async function saveImage(url) {
+    try {
+        const response = await fetch(url, { mode: 'cors' });
+        if (!response.ok) return url;
+        const blob = await response.blob();
+        const tx = dbCache.transaction("images", "readwrite");
+        const store = tx.objectStore("images");
+        store.put(blob, url);
+        return URL.createObjectURL(blob);
+    } catch {
+        return url;
+    }
+}
+
+async function getImage(url) {
+    if (!url) return '';
+    if (memoryImageCache[url]) {
+        return memoryImageCache[url];
+    }
+    const cached = await getCachedImage(url);
+    if (cached) {
+        memoryImageCache[url] = cached;
+        return cached;
+    }
+    const saved = await saveImage(url);
+    if (saved) {
+        memoryImageCache[url] = saved;
+    }
+    return saved;
+}
+
+const firebaseConfig = { databaseURL: "https://myapps-4a8eb-default-rtdb.firebaseio.com" };
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+
+function getDeviceId(){
+    let id = localStorage.getItem("device_id");
+    if(!id){
+        id = "dev_" + Math.random().toString(36).substr(2,12);
+        localStorage.setItem("device_id", id);
+    }
+    return id;
+}
+const DEVICE_ID = getDeviceId();
+
+async function checkSubscriptionBackground() {
+    try {
+        const subRef = db.ref("subscriptions").orderByChild("device_id").equalTo(DEVICE_ID);
+        subRef.once("value", (snap) => {
+            const data = snap.val();
+            if (data) {
+                const now = Date.now();
+                for (const id in data) {
+                    const sub = data[id];
+                    if (sub.expireAt && now > sub.expireAt) {
+                        db.ref("subscriptions/" + id).remove();
+                        continue;
+                    }
+                    if (sub.used) {
+                        isUserSubscribed = true;
+                        break;
+                    }
+                }
+            }
+        });
+    } catch (err) {
+        console.error("Subscription check error:", err);
+    }
+}
+
+let allMovies = [], currentCategory = "all"; 
+let isInCategoryView = false;
+
+async function fetchMovies() {
+    try {
+        await openDB();
+        const response = await fetch(
+            "https://cdn.jsdelivr.net/gh/appcreator05/post@main/app.json", 
+            { cache: "no-store" }
+        );
+        allMovies = await response.json();
+
+        setTimeout(() => {
+            renderContent(allMovies);
+        }, 50);
+
+    } catch (err) {
+    console.error(err);
+    document.getElementById("mainContainer").innerHTML = `
+        <div style='grid-column:1/-1;text-align:center;padding:40px;'>
+            Failed to load movies! 
+            <button onclick="window.location='go:hometest'" style='padding:8px 15px;background:#00d2ff;border:none;border-radius:5px;cursor:pointer;font-weight:bold;'>Retry</button>
+        </div>
+    `;
+}
+}
+
+function filterMovies(category) {
+    currentCategory = category;
+    window.scrollTo(0, 0);
+
+    if (category === 'all') {
+        isInCategoryView = false;
+        updateMenuButtonState();
+        const container = document.getElementById('mainContainer');
+        
+        if (homeCachedHTML) {
+            container.innerHTML = homeCachedHTML;
+            container.querySelectorAll('img[data-src]').forEach(img => imageObserver.observe(img));
+        } else {
+            renderContent(allMovies);
+        }
+    } else {
+        isInCategoryView = true;
+        updateMenuButtonState();
+        const matched = allMovies.filter(m => m.category === category);
+        const container = document.getElementById('mainContainer');
+        container.innerHTML = `
+            <div class="section-header">
+                <div class="section-title-wrapper">
+                    <div class="section-bar"></div>
+                    <div class="section-title">${category}</div>
+                </div>
+            </div>
+            <div class="gallery-grid" id="movieGallery"></div>
+        `;
+        const gallery = document.getElementById('movieGallery');
+        matched.length === 0 ? gallery.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:30px;color:#888;'>No movies found!</div>" : matched.forEach(m => renderCard(m, gallery));
+    }
+}
+
+function updateMenuButtonState() {
+    const icon = document.getElementById('menuIcon');
+    const text = document.getElementById('menuBtnText');
+    if (isInCategoryView) {
+        icon.className = "fa-solid fa-arrow-left";
+        text.innerText = "Back";
+    } else {
+        icon.className = "fa-solid fa-bars";
+        text.innerText = "Menu";
+    }
+}
+
+function handleMenuBtnClick() {
+    if (isInCategoryView) {
+        filterMovies('all');
+    } else {
+        toggleSidebar();
+    }
+}
+
+function handleSearch() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+    if (!searchTerm) {
+        if (currentCategory === 'all') {
+            filterMovies('all');
+        } else {
+            filterMovies(currentCategory);
+        }
+        return;
+    }
+
+    isInCategoryView = true;
+    updateMenuButtonState();
+    window.scrollTo(0, 0);
+
+    const matched = allMovies.filter(m => {
+        const titleMatch = m.title && m.title.toLowerCase().includes(searchTerm);
+        const castMatch = m.cast && m.cast.toLowerCase().includes(searchTerm);
+        return titleMatch || castMatch;
+    });
+
+    const container = document.getElementById('mainContainer');
+    container.innerHTML = `
+        <div class="section-header">
+            <div class="section-title-wrapper">
+                <div class="section-bar"></div>
+                <div class="section-title">Search Results</div>
+            </div>
+        </div>
+        <div class="gallery-grid" id="movieGallery"></div>
+    `;
+    const gallery = document.getElementById('movieGallery');
+    if (matched.length === 0) {
+        gallery.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:30px;color:#888;'>No movies found!</div>";
+    } else {
+        matched.forEach(m => renderCard(m, gallery));
+    }
+}
+
+// --- Continue Watching History Logic ---
+function addToContinueWatching(movie) {
+    let history = JSON.parse(localStorage.getItem('continue_watching') || '[]');
+    // ইতিমধ্যে লিস্টে থাকলে তা সরিয়ে ফেলা যাতে নতুন করে শীর্ষে যোগ করা যায়
+    history = history.filter(item => item.link !== movie.link);
+    // নতুন মুভিটি শুরুতে যোগ করা
+    history.unshift(movie);
+    // সর্বোচ্চ ১০টি আইটেম রাখা
+    if (history.length > 10) {
+        history = history.slice(0, 10);
+    }
+    localStorage.setItem('continue_watching', JSON.stringify(history));
+}
+
+// --- Subscription Popup Logic & Post Click Handler ---
+window.handleMovieClick = function(movieObj) {
+    // Continue Watching-এ যুক্ত করা
+    addToContinueWatching(movieObj);
+
+    if (!isUserSubscribed) {
+        document.getElementById('subModalOverlay').style.display = 'flex';
+    } else {
+        showOverlay(movieObj.link);
+    }
+}
+
+window.closeSubModal = function() {
+    document.getElementById('subModalOverlay').style.display = 'none';
+}
+
+window.handleSubscribeNow = function() {
+    window.location.href = "go:sub2";
+}
+
+function showOverlay(link) {
+    const overlay = document.createElement('div');
+    overlay.id = "temp-overlay";
+    overlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; justify-content:center; align-items:center; z-index:99999; color:#fff; font-size:20px;";
+    overlay.innerHTML = "Please Wait...";
+    document.body.appendChild(overlay);
+
+    setTimeout(() => {
+        window.location.href = link;
+    }, 1000);
+
+    setTimeout(() => {
+        const el = document.getElementById("temp-overlay");
+        if (el) el.remove();
+    }, 5000);
+}
+
+// --- Voice Search Function ---
+function startVoiceSearch() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert("Voice search is not supported in your browser!");
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    const micBtn = document.getElementById('micBtn');
+
+    recognition.onstart = function() {
+        micBtn.classList.add('listening');
+    };
+
+    recognition.onresult = function(event) {
+        const speechToText = event.results[0][0].transcript;
+        document.getElementById('searchInput').value = speechToText;
+        handleSearch();
+    };
+
+    recognition.onerror = function() {
+        micBtn.classList.remove('listening');
+    };
+
+    recognition.onend = function() {
+        micBtn.classList.remove('listening');
+    };
+
+    recognition.start();
+}
+
+// মোবাইল ডিভাইসের জন্য সাইডবার টগল ফাংশন
+function toggleSidebar() { 
+    if (window.innerWidth > 768) return; 
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+    
+    sidebar.classList.toggle("active");
+    overlay.classList.toggle("active");
+}
+
+const imageObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const img = entry.target;
+            observer.unobserve(img);
+           
+            getImage(img.dataset.src).then((cachedSrc) => {
+                img.src = cachedSrc;
+                img.onload = () => {
+                    img.classList.add("loaded");
+                };
+            });
+        }
+    });
+}, {
+    root: null,
+    rootMargin: "200px 0px",
+    threshold: 0
+});
+
+function renderCard(m, container) {
+    const card = document.createElement('div');
+    card.className = 'movie-card';
+    card.onclick = () => handleMovieClick(m); // পুরো মুভি অবজেক্ট পাস করা হচ্ছে
+
+    card.innerHTML = `
+        <span class="rating-badge">★ ${m.rating || '0.0'}</span>
+        <img data-src="${m.poster}">
+        <div class="movie-title-container">
+            <div class="movie-title">${m.title}</div>
+        </div>
+    `;
+
+    container.appendChild(card);
+    const img = card.querySelector("img");
+    imageObserver.observe(img);
+}
+
+function renderContent(movies) {
+    const container = document.getElementById('mainContainer');
+    container.innerHTML = "";
+
+    // ১. প্রথমে Continue Watching সেকশন রেন্ডার করা (যদি হিস্ট্রি থাকে)
+    const history = JSON.parse(localStorage.getItem('continue_watching') || '[]');
+    if (history.length > 0) {
+        const continueDiv = document.createElement('div');
+        continueDiv.style.marginBottom = "5px";
+
+        continueDiv.innerHTML = `
+            <div class="section-header">
+                <div class="section-title-wrapper">
+                    <div class="section-bar"></div>
+                    <div class="section-title">Continue Watching</div>
+                </div>
+            </div>
+            <div class="horizontal-scroll-container" id="row-continue-watching"></div>
+        `;
+        container.appendChild(continueDiv);
+
+        const continueRow = continueDiv.querySelector('.horizontal-scroll-container');
+        history.forEach(m => renderCard(m, continueRow));
+    }
+
+    // ২. বাকি ক্যাটেগরিগুলো রেন্ডার করা (প্রতিটিতে সর্বোচ্চ ১০টি)
+    const categories = [...new Set(movies.map(m => m.category).filter(Boolean))];
+
+    categories.forEach(cat => {
+        const catMovies = movies.filter(m => m.category === cat);
+        if (catMovies.length === 0) return;
+
+        const limitedMovies = catMovies.slice(0, 10);
+
+        const sectionDiv = document.createElement('div');
+        sectionDiv.style.marginBottom = "5px";
+
+        sectionDiv.innerHTML = `
+            <div class="section-header">
+                <div class="section-title-wrapper">
+                    <div class="section-bar"></div>
+                    <div class="section-title">${cat}</div>
+                </div>
+                <button class="show-all-btn" onclick="filterMovies('${cat}')">Show All</button>
+            </div>
+            <div class="horizontal-scroll-container" id="row-${cat.replace(/\s+/g, '_')}"></div>
+        `;
+
+        container.appendChild(sectionDiv);
+
+        const rowContainer = sectionDiv.querySelector('.horizontal-scroll-container');
+        limitedMovies.forEach(m => renderCard(m, rowContainer));
+    });
+
+    homeCachedHTML = container.innerHTML;
+}
+
+// ফায়ারবেস লাইভ অ্যাক্টিভ ইউজার কাউন্টার
+let currentActive = Math.floor(Math.random() * (482 - 173 + 1)) + 173;
+let growthCounter = 0; 
+
+function updateActiveCount() {
+    const increaseAmount = Math.floor(Math.random() * 2) + 1; 
+    if (growthCounter < 10) {
+        currentActive += increaseAmount;
+        growthCounter++; 
+    } else {
+        currentActive -= 2;
+        growthCounter = 0; 
+    }
+    if (currentActive > 482) currentActive = 482; 
+    if (currentActive < 173) currentActive = 173;
+
+    const activeSpan = document.getElementById('activeCount');
+    if (activeSpan) {
+        activeSpan.innerText = currentActive;
+    }
+}
+
+setInterval(updateActiveCount, 60000);
+const activeSpan = document.getElementById('activeCount');
+if (activeSpan) {
+    activeSpan.innerText = currentActive;
+}
+
+checkSubscriptionBackground();
+fetchMovies();
+</script>
+
+</body>
+</html>

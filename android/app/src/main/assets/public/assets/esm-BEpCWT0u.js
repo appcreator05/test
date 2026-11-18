@@ -1,0 +1,2 @@
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["./web-CIREC9X-.js","./index-DEwjZBHn.js"])))=>i.map(i=>d[i]);
+import{_ as t}from"./main-DBv7_JPD.js";import{r as a}from"./index-DEwjZBHn.js";import"./no-internet-_z-ZxIQA.js";var i;(function(r){r.Dark="DARK",r.Default="DEFAULT",r.Light="LIGHT"})(i||(i={}));const m=a("NavigationBar",{web:()=>t(()=>import("./web-CIREC9X-.js"),__vite__mapDeps([0,1]),import.meta.url).then(r=>new r.NavigationBarWeb)});export{m as NavigationBar,i as Style};

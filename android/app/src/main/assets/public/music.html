@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Online Music</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <!-- Enforce Android Chrome User Agent for Payment Gateway UPI options -->
+    <script>
+        (function() {
+            var targetUA = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36";
+            try {
+                Object.defineProperty(navigator, 'userAgent', { get: function() { return targetUA; }, configurable: true });
+            } catch(e) {
+                try { navigator.__defineGetter__('userAgent', function() { return targetUA; }); } catch(err){}
+            }
+            try {
+                Object.defineProperty(navigator, 'appVersion', { get: function() { return "5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36"; }, configurable: true });
+            } catch(e) {}
+            try {
+                Object.defineProperty(navigator, 'platform', { get: function() { return "Linux armv8l"; }, configurable: true });
+            } catch(e) {}
+        })();
+    </script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+/* Base Style */
+body {
+  font-family: 'Poppins', sans-serif !important;
+}
+
+/* VIP Subscription Pricing Plans & Modal (Ultra Professional) */
+.vip-sub-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 16px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.vip-sub-modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.vip-sub-modal-content {
+    background: radial-gradient(circle at 50% 0%, #1e0608 0%, #0d0e12 55%, #050608 100%);
+    border: 1px solid rgba(229, 9, 20, 0.38);
+    border-radius: 20px;
+    max-width: 1050px;
+    width: 100%;
+    max-height: 94vh;
+    overflow-y: auto;
+    padding: 30px 24px 28px 24px;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 50px rgba(229, 9, 20, 0.22);
+    position: relative;
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    transform: scale(0.92);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+}
+
+.vip-sub-modal-overlay.show .vip-sub-modal-content {
+    transform: scale(1);
+}
+
+.vip-sub-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.vip-sub-modal-close:hover {
+    background: #e50914;
+    border-color: #e50914;
+    transform: rotate(90deg);
+}
+
+.vip-sub-modal-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.vip-sub-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(229, 9, 20, 0.15);
+    border: 1px solid rgba(229, 9, 20, 0.5);
+    color: #ff4d4d;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.vip-sub-title {
+    font-size: clamp(20px, 3.5vw, 28px);
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.5px;
+    line-height: 1.25;
+    text-align: center;
+}
+
+.vip-sub-subtitle {
+    font-size: 14px;
+    color: #bbb;
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    text-align: center;
+}
+
+.vip-sub-upi-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.upi-chip {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    padding: 5px 11px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #e2e8f0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Pricing Plans Grid Style */
+.plans {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 16px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.plan {
+    background: linear-gradient(180deg, #15161c 0%, #0d0e12 100%);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.plan:hover {
+    transform: translateY(-6px);
+    border-color: #e50914;
+    box-shadow: 0 16px 40px rgba(229, 9, 20, 0.28);
+}
+
+.plan.featured {
+    border-color: #e50914;
+    box-shadow: 0 12px 36px rgba(229, 9, 20, 0.25);
+    background: linear-gradient(180deg, #1d1215 0%, #0e0e12 100%);
+}
+
+.plan.featured-gold {
+    border-color: #9333ea;
+    box-shadow: 0 12px 36px rgba(147, 51, 234, 0.25);
+    background: linear-gradient(180deg, #180f22 0%, #0e0e12 100%);
+}
+
+.plan-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #e50914;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 3px 9px;
+    border-radius: 12px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    z-index: 2;
+}
+
+.plan-header {
+    background: linear-gradient(135deg, #e50914 0%, #b80710 100%);
+    padding: 15px 12px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 15px;
+    color: white;
+    letter-spacing: 0.5px;
+}
+
+.plan-body {
+    padding: 20px 16px;
+    text-align: center;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.price {
+    font-size: 32px;
+    font-weight: 800;
+    margin: 6px 0;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+}
+
+.duration {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ff6b6b;
+    margin-bottom: 6px;
+}
+
+.device {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.plan-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 18px 0;
+    text-align: left;
+    font-size: 12px;
+    color: #cbd5e1;
+}
+
+.plan-features li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 7px;
+    line-height: 1.4;
+}
+
+.plan-features li i {
+    color: #04AA6D;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.btn {
+    display: block;
+    width: 100%;
+    background: linear-gradient(135deg, #e50914 0%, #b80710 100%);
+    color: #fff;
+    padding: 12px 18px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.25s;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 16px rgba(229, 9, 20, 0.4);
+    box-sizing: border-box;
+}
+
+.btn:hover {
+    background: linear-gradient(135deg, #ff1f2d 0%, #c80813 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 22px rgba(229, 9, 20, 0.6);
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.vip-sub-modal-footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 12px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* Custom Alert Popup UI */
+.custom-alert-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.3s ease-in-out;
+}
+
+.custom-alert-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.custom-alert-box {
+    background: #111217;
+    border: 2px solid #e50914;
+    padding: 30px;
+    border-radius: 16px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 10px 45px rgba(229, 9, 20, 0.35);
+    transform: scale(0.7);
+    transition: 0.3s ease-in-out;
+    color: #ffffff;
+    font-family: 'Poppins', sans-serif;
+    box-sizing: border-box;
+}
+
+.custom-alert-overlay.show .custom-alert-box {
+    transform: scale(1);
+}
+
+.custom-alert-box .icon {
+    font-size: 45px;
+    color: #04AA6D;
+    margin-bottom: 12px;
+}
+
+.custom-alert-box h3 {
+    margin: 0 0 10px 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.custom-alert-box p {
+    margin: 0;
+    color: #ccc;
+    font-size: 14px;
+}
+
+/* Loading Spinner for Popup */
+.alert-spinner {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    border: 3px solid rgba(255, 255, 255, 0.25);
+    border-top-color: #e50914;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-top: 16px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.post-body a {
+  color: #f9f9f9 !important;
+  text-decoration: none;
+  transition: color .3s;
+}
+      #shorts-container-wrapper {display: none;} #header-wrapper{display: none;}
+      #content-wrapper > .container, #footer-ads-wrap > .container, #footer-fbm .container, #footer-wrapper .container, #header-ads-wrap > .container, #header-wrapper .container, #trending-wrap > .container, .hero-post .flex-center{padding: 0 0px;}
+      .is-single #content-wrapper > .container {
+        display: flex;justify-content: space-between;background: #000;}.item-post h1.entry-title{display: none;}.is-single #content-wrapper {padding: 0px 0 0px;}#footer-wrapper{display: none;}#post-body{margin: 0px 0 0;}
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+        .sidebar {
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100%;
+    width: 270px;
+    max-width: 82vw;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #111;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 8000;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    box-shadow: 6px 0 24px rgba(0, 0, 0, 0.85);
+    pointer-events: none;
+}
+        .sidebar.open {
+    transform: translateX(0);
+    pointer-events: auto;
+}
+        .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 12px 20px;
+    border-bottom: 1px solid #222;
+    background: #141414;
+    flex-shrink: 0;
+}
+        .sidebar-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+        .sidebar-menu-items {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
+    scrollbar-width: thin;
+    scrollbar-color: #ff3b30 #1a1a1a;
+}
+        .sidebar-menu-items::-webkit-scrollbar { width: 4px; }
+        .sidebar-menu-items::-webkit-scrollbar-track { background: #141414; }
+        .sidebar-menu-items::-webkit-scrollbar-thumb { background: #ff3b30; border-radius: 4px; }
+        .sidebar a { padding: 15px 20px; color: #fff; display: flex; align-items: center; gap: 10px; text-decoration: none; font-size: 15px; border-bottom: 1px solid #222; }
+        .sidebar a:hover, .sidebar a:active { background: #ff3b30; }
+        .closeSide { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 8px; color: #fff; font-size: 20px; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .header { display: flex; align-items: center; padding: 12px; background: #1a1a1a; position: fixed; top: 0; z-index: 999; width: 100%; height: 64px; box-sizing: border-box; }
+        .menuBtn { background: #ff3b30; color: #fff; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; margin-right: 10px; font-weight: bold; display: flex; align-items: center; gap: 6px; }
+        #musicSearch { flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid #333; background: #262626; color: #fff; font-size: 15px; outline: none; margin: 0; }
+        #musicList { padding: 12px; margin-bottom: 145px; margin-top: 74px; max-width: 800px; margin-left: auto; margin-right: auto; }
+        .song-item { display: flex; align-items: center; margin-bottom: 12px; background: #1c1c1e; padding: 8px 12px; border-radius: 12px; cursor: pointer; height: 62px; box-sizing: border-box; transition: transform 0.15s, background 0.2s; border: 1px solid transparent; }
+        .song-item:active { transform: scale(0.98); }
+        .song-item.active { border: 1px solid #ff3b30; background: #2a1515 !important; }
+        .song-img { width: 46px; height: 46px; border-radius: 8px; margin-right: 14px; object-fit: cover; flex-shrink: 0; }
+        .song-text-container { flex: 1; min-width: 0; overflow: hidden; }
+        .song-text-container strong { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+        .song-text-container small { display: block; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #aaa; margin-top: 2px; }
+        .mini-player { position: fixed; bottom: 0; bottom: env(safe-area-inset-bottom, 0px); left: 0; right: 0; background: #1a1a1a; padding: 12px 16px 14px 16px; display: none; flex-direction: column; border-radius: 20px 20px 0 0; z-index: 7000; box-shadow: 0 -8px 25px rgba(0,0,0,0.95); max-width: 800px; margin: 0 auto; box-sizing: border-box; border-top: 2px solid #ff3b30; pointer-events: auto !important; transition: bottom 0.2s ease; }
+        .progress-box { display: flex; align-items: center; gap: 10px; font-size: 12px; margin-bottom: 8px; color: #bbb; }
+        .progress-bar { flex: 1; accent-color: #ff3b30; cursor: pointer; height: 5px; margin: 0; }
+        .controls { display: flex; justify-content: center; align-items: center; gap: 32px; font-size: 28px; cursor: pointer; margin-bottom: 8px; }
+        .controls span, .controls button {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            background: none !important;
+            border: none !important;
+            padding: 0;
+            cursor: pointer;
+            outline: none;
+            transition: transform 0.2s;
+        }
+        .controls span:hover, .controls button:hover { transform: scale(1.1); }
+        .controls span:active, .controls button:active { transform: scale(0.95); }
+        .controls span img, .controls button img {
+            border-radius: 50%;
+            display: block;
+            object-fit: cover;
+        }
+        .modal { display: none; position: fixed; z-index: 6000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); flex-direction: column; align-items: center; justify-content: center; padding-top: calc(68px + env(safe-area-inset-top, 0px)); padding-bottom: calc(215px + env(safe-area-inset-bottom, 0px)); padding-left: 16px; padding-right: 16px; box-sizing: border-box; cursor: pointer; }
+        .modal-content { max-width: 90%; max-height: calc(100vh - 310px); border-radius: 15px; border: 2px solid #ff3b30; object-fit: contain; box-shadow: 0 10px 35px rgba(0,0,0,0.95); cursor: default; transition: transform 0.2s ease; }
+      
+.controls button {
+    background: none !important;
+    border: none !important;
+    padding: 0;
+    cursor: pointer;
+    outline: none;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.2s;
+}
+
+.controls button:hover {
+    transform: scale(1.1);
+}
+
+.controls button img {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+}
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 7999;
+    display: none;
+}
+
+/* ========================================================
+   Subscription Alert Modal (Exact Match to sub.jpg)
+   ======================================================== */
+.sub-alert-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.85) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 9999999 !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+    pointer-events: auto !important;
+}
+
+.sub-alert-overlay.show {
+    display: flex !important;
+}
+
+.sub-alert-card {
+    background: #11141b !important;
+    border: 1px solid #262c3a !important;
+    border-radius: 20px !important;
+    padding: 28px 24px 24px 24px !important;
+    max-width: 340px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 30px rgba(255, 23, 77, 0.15) !important;
+    color: #ffffff !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    user-select: none !important;
+    animation: subCardPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+}
+
+@keyframes subCardPop {
+    0% { transform: scale(0.85); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.sub-alert-icon-box {
+    width: 64px !important;
+    height: 64px !important;
+    border-radius: 18px !important;
+    background: linear-gradient(180deg, #ff1854 0%, #d40837 100%) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-bottom: 18px !important;
+    box-shadow: 0 10px 25px rgba(212, 8, 55, 0.5) !important;
+}
+
+.sub-alert-icon-box span {
+    color: #ffffff !important;
+    font-size: 34px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    user-select: none !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.sub-alert-title {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    margin: 0 0 8px 0 !important;
+    letter-spacing: 0.3px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.sub-alert-desc {
+    font-size: 13px !important;
+    color: #8fa0b5 !important;
+    margin: 0 0 24px 0 !important;
+    line-height: 1.45 !important;
+    max-width: 250px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.sub-alert-btn-group {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+}
+
+.sub-alert-btn-cancel {
+    flex: 1 !important;
+    padding: 12px 14px !important;
+    border-radius: 12px !important;
+    background: #1f2430 !important;
+    border: 1px solid #303848 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.sub-alert-btn-cancel:hover {
+    background: #283040 !important;
+}
+
+.sub-alert-btn-cancel:active {
+    transform: scale(0.96) !important;
+}
+
+.sub-alert-btn-subscribe {
+    flex: 1 !important;
+    padding: 12px 14px !important;
+    border-radius: 12px !important;
+    background: #ff174d !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 8px 20px rgba(255, 23, 77, 0.45) !important;
+    white-space: nowrap !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.sub-alert-btn-subscribe:hover {
+    background: #e00c3e !important;
+}
+
+.sub-alert-btn-subscribe:active {
+    transform: scale(0.96) !important;
+}
+    </style>
+  <script type="module" crossorigin src="./assets/music-rYXrHY-d.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/no-internet-_z-ZxIQA.js">
+</head>
+<body>
+
+<!-- Image View Modal - leaves bottom player completely visible & interactive -->
+<div id="imageModal" class="modal" onclick="closeModal()">
+    <span onclick="closeModal()" style="position:absolute; top:calc(15px + env(safe-area-inset-top, 0px)); right:18px; font-size:22px; cursor:pointer; z-index:7500; color: #fff; background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.3); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Close Poster">✕</span>
+    <img class="modal-content" id="modalImg" referrerpolicy="no-referrer" onclick="event.stopPropagation()">
+</div>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<!-- Slide-in Navigation Sidebar -->
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-title"><i class="fa-solid fa-music" style="color: #ff3b30;"></i> Music Menu</div>
+        <button class="closeSide" onclick="toggleSidebar()" aria-label="Close Menu">✕</button>
+    </div>
+    <div id="sidebarMenuItems" class="sidebar-menu-items">
+        <a href="index.html"><i class="fa-solid fa-house"></i> <span>🏠 Home Back</span></a>
+        <a href="javascript:void(0)" onclick="showAllSongs()"><i class="fa-solid fa-music"></i> <span>All Songs</span></a>
+    </div>
+</div>
+
+<!-- Header with Menu & Search -->
+<div class="header">
+    <button class="menuBtn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i> Menu</button>
+    <input type="text" id="musicSearch" placeholder="Search songs, artists, movies..." onkeyup="filterMusicList()">
+</div>
+
+<!-- Music Songs List -->
+<div id="musicList">
+    <div style="text-align: center; color: #888; padding: 40px 10px;">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size: 26px; color: #ff3b30; margin-bottom: 12px;"></i>
+        <div>Loading Music Playlist...</div>
+    </div>
+</div>
+
+<!-- Floating Mini Player -->
+<div class="mini-player" id="miniPlayer">
+    <div class="controls">
+        <span onclick="prevSong()" style="cursor: pointer;" title="Previous Song">
+            <img src="preview.png" onerror="this.src='pre.png'; this.onerror=function(){this.src='https://raw.githubusercontent.com/shortsproeran-creator/mt/main/1784459478765_pre.png';}" width="42" height="42" alt="Previous">
+        </span>
+
+        <span id="playPauseBtn" onclick="togglePlay()" style="cursor: pointer;" title="Play/Pause">
+            <img id="playPauseImg" src="play.png" onerror="this.onerror=function(){this.src='https://raw.githubusercontent.com/shortsproeran-creator/mt/main/1784458824699_play.png';}" width="46" height="46" alt="Play">
+        </span>
+
+        <span onclick="nextSong()" style="cursor: pointer;" title="Next Song">
+            <img src="next.png" onerror="this.onerror=function(){this.src='https://raw.githubusercontent.com/shortsproeran-creator/mt/main/1784459478765_pre.png'; this.style.transform='scaleX(-1)';}" width="42" height="42" alt="Next">
+        </span>
+    </div>
+
+    <div class="progress-box">
+        <span id="currentTime">0:00</span>
+        <input type="range" class="progress-bar" id="audioRange" value="0" min="0" max="100">
+        <span id="durationTime">0:00</span>
+    </div>
+
+    <div id="nowPlaying" style="text-align:center; font-weight:bold; font-size: 14px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ffffff;">Not Playing</div>
+
+    <audio id="audioPlayer" preload="auto"></audio>
+</div>
+
+
+
+<script>
+// ==========================================
+// VIP SUBSCRIPTION ENGINE (100% AD-FREE MUSIC)
+// ==========================================
+function isVipSubscribed() {
+    if (window.__vipSubscriptionExpireAt && Date.now() >= Number(window.__vipSubscriptionExpireAt)) {
+        window.__isVipSubscribed = false;
+        window.__vipSubscriptionExpireAt = 0;
+        try {
+            localStorage.removeItem('vdosky_is_vip');
+            localStorage.removeItem('vdosky_subscription_cache');
+        } catch(e) {}
+        return false;
+    }
+    if (window.__isVipSubscribed === true) return true;
+    try {
+        if (typeof localStorage !== 'undefined') {
+            const cacheRaw = localStorage.getItem('vdosky_subscription_cache');
+            if (cacheRaw) {
+                const parsed = JSON.parse(cacheRaw);
+                if (parsed && parsed.expireAt) {
+                    if (Date.now() < Number(parsed.expireAt)) {
+                        return true;
+                    }
+                    localStorage.removeItem('vdosky_is_vip');
+                    localStorage.removeItem('vdosky_subscription_cache');
+                    return false;
+                }
+            }
+            if (localStorage.getItem('vdosky_is_vip') === 'true') {
+                return true;
+            }
+        }
+    } catch(e) {}
+    return false;
+}
+window.isVipSubscribed = isVipSubscribed;
+
+function updateVipAdSuppression() {
+    const isVip = isVipSubscribed();
+    if (isVip) {
+        if (document.body) document.body.classList.add('vip-active');
+        if (document.documentElement) document.documentElement.classList.add('vip-active');
+    } else {
+        if (document.body) document.body.classList.remove('vip-active');
+        if (document.documentElement) document.documentElement.classList.remove('vip-active');
+    }
+    const miniPlayer = document.getElementById('miniPlayer');
+    if (miniPlayer) {
+        miniPlayer.style.bottom = '0px';
+    }
+    const musicList = document.getElementById('musicList');
+    if (musicList) {
+        musicList.style.marginBottom = '145px';
+        musicList.style.marginTop = '74px';
+    }
+}
+window.updateVipAdSuppression = updateVipAdSuppression;
+
+window.handleMusicSubscriptionUpdate = function(isSub, expireAtMs) {
+    const prev = !!window.__isVipSubscribed;
+    window.__isVipSubscribed = !!isSub;
+    window.__vipSubscriptionExpireAt = isSub ? Number(expireAtMs || 0) : 0;
+
+    try {
+        if (isSub) {
+            localStorage.setItem('vdosky_is_vip', 'true');
+            if (expireAtMs) {
+                localStorage.setItem('vdosky_subscription_cache', JSON.stringify({
+                    isSubscribed: true,
+                    expireAt: Number(expireAtMs)
+                }));
+            }
+        } else {
+            localStorage.removeItem('vdosky_is_vip');
+            localStorage.removeItem('vdosky_subscription_cache');
+        }
+    } catch(e) {}
+
+    updateVipAdSuppression();
+
+    if (prev && !isSub) {
+        try {
+            const audioEl = document.getElementById('audioPlayer');
+            if (audioEl && !audioEl.paused) {
+                audioEl.pause();
+                if (typeof setPlayPauseIcon === 'function') setPlayPauseIcon(false);
+            }
+        } catch(e) {}
+        if (typeof window.openSubscriptionModal === 'function') {
+            window.openSubscriptionModal();
+        }
+    }
+};
+
+updateVipAdSuppression();
+window.addEventListener('DOMContentLoaded', updateVipAdSuppression);
+
+window.openInChrome = function(url) {
+    if (!url) return;
+    if (window.Android && typeof window.Android.openChromeDirectly === 'function') {
+        try { window.Android.openChromeDirectly(url); return; } catch (e) {}
+    }
+    if (window.Android && typeof window.Android.openExternalUrl === 'function') {
+        try { window.Android.openExternalUrl(url); return; } catch (e) {}
+    }
+    window.open(url, '_blank');
+};
+
+// ==========================================
+// MUSIC PLAYER ENGINE
+// ==========================================
+let songsList = [], currentQueue = [], currentPlaylist = [], currentSongIndex = 0;
+const audio = document.getElementById('audioPlayer');
+const range = document.getElementById('audioRange');
+const curTimeSpan = document.getElementById('currentTime');
+const durTimeSpan = document.getElementById('durationTime');
+const playPauseImg = document.getElementById('playPauseImg');
+
+const ICON_PLAY = "play.png";
+const ICON_PAUSE = "pause.png";
+const FALLBACK_PLAY = "https://raw.githubusercontent.com/shortsproeran-creator/mt/main/1784458824699_play.png";
+const FALLBACK_PAUSE = "https://raw.githubusercontent.com/shortsproeran-creator/mt/main/1784459617609_pouse.png";
+
+function setPlayPauseIcon(isPlaying) {
+    if (!playPauseImg) return;
+    if (isPlaying) {
+        playPauseImg.src = ICON_PAUSE;
+        playPauseImg.onerror = function() {
+            this.src = "pouse.png";
+            this.onerror = function() { this.src = FALLBACK_PAUSE; };
+        };
+    } else {
+        playPauseImg.src = ICON_PLAY;
+        playPauseImg.onerror = function() {
+            this.src = FALLBACK_PLAY;
+        };
+    }
+}
+
+function shuffleArray(array) { return [...array].sort(() => Math.random() - 0.5); }
+function formatTime(s) { 
+    if (isNaN(s) || s < 0) return "0:00";
+    let m = Math.floor(s / 60), sec = Math.floor(s % 60); 
+    return m + ":" + (sec < 10 ? "0" + sec : sec); 
+}
+
+async function loadMusic() {
+    try {
+        const res = await fetch("https://raw.githubusercontent.com/appcreator05/post/main/6766846.json");
+        songsList = await res.json();
+        currentQueue = [];
+        songsList.forEach(m => {
+            if (Array.isArray(m.songs)) {
+                m.songs.forEach(s => currentQueue.push({ ...s, poster: m.poster, movie: m.movie, category: m.category }));
+            }
+        });
+        currentPlaylist = shuffleArray(currentQueue);
+        
+        renderMusicList(currentPlaylist.slice(0, 100));
+        loadCategories();
+
+        // Do NOT autoplay songs when opening music section
+        if (currentPlaylist.length > 0) {
+            currentSongIndex = 0;
+            const song = currentPlaylist[0];
+            const nowPlayingEl = document.getElementById('nowPlaying');
+            if (nowPlayingEl) {
+                nowPlayingEl.innerText = song.title + (song.movie ? ` • ${song.movie}` : '');
+            }
+            setPlayPauseIcon(false);
+        }
+    } catch (err) {
+        console.error("Failed to load songs:", err);
+        const list = document.getElementById('musicList');
+        if (list) {
+            list.innerHTML = `<div style="text-align:center; padding:40px; color:#ff3b30;">Failed to load music playlist. Please check internet connection.</div>`;
+        }
+    }
+}
+
+let pendingMusicPlayIndex = null;
+
+function openSubscriptionModal() {
+    let modal = document.getElementById('vipSubscriptionModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'vipSubscriptionModal';
+        modal.className = 'sub-alert-overlay';
+        modal.onclick = () => closeSubscriptionModal();
+        modal.innerHTML = `
+            <div class="sub-alert-card" onclick="event.stopPropagation()">
+                <div class="sub-alert-icon-box">
+                    <span>?</span>
+                </div>
+                <h3 class="sub-alert-title">Subscription Alert!</h3>
+                <p class="sub-alert-desc">Please subscribe a plan to view our paid items</p>
+                <div class="sub-alert-btn-group">
+                    <button type="button" class="sub-alert-btn-cancel" onclick="closeSubscriptionModal()">Cancel</button>
+                    <button type="button" class="sub-alert-btn-subscribe" onclick="goToSubscriptionSection()">Subscribe Now</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    modal.style.display = 'flex';
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeSubscriptionModal() {
+    const modal = document.getElementById('vipSubscriptionModal');
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+window.openSubscriptionModal = openSubscriptionModal;
+window.closeSubscriptionModal = closeSubscriptionModal;
+
+window.goToSubscriptionSection = function() {
+    sessionStorage.setItem('vdosky_open_vip', '1');
+    window.location.href = 'index.html';
+};
+
+window.payAndActivate = function(price, days, planName, buttonEl) {
+    try {
+        var targetUA = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36";
+        Object.defineProperty(navigator, 'userAgent', { get: function() { return targetUA; }, configurable: true });
+        Object.defineProperty(navigator, 'appVersion', { get: function() { return "5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36"; }, configurable: true });
+    } catch(e) {}
+    if (typeof Razorpay === 'undefined') {
+        alert("Payment gateway loading... please retry in a moment.");
+        return;
+    }
+    const origText = buttonEl ? buttonEl.innerText : 'SELECT PLAN';
+    if (buttonEl) {
+        buttonEl.disabled = true;
+        buttonEl.innerText = 'Processing...';
+    }
+
+    const options = {
+        key: "rzp_live_T2PygvcB7moN7R",
+        amount: Math.round(price * 100),
+        currency: "INR",
+        name: "VDOSky.in",
+        description: planName + " (" + days + " Days)",
+        image: "/logo.png",
+        handler: function(response) {
+            const expireAt = Date.now() + (Number(days || 30) * 86400000);
+            if (typeof window.handleMusicSubscriptionUpdate === 'function') {
+                window.handleMusicSubscriptionUpdate(true, expireAt);
+            }
+            if (typeof window.saveMusicSubscriptionToFirebase === 'function') {
+                window.saveMusicSubscriptionToFirebase(days, planName, price, response && response.razorpay_payment_id);
+            }
+            renderMusicList(currentPlaylist);
+
+            const alertEl = document.getElementById('customAlert');
+            if (alertEl) {
+                alertEl.classList.add('show');
+                setTimeout(() => {
+                    alertEl.classList.remove('show');
+                }, 2000);
+            }
+            closeSubscriptionModal();
+            if (buttonEl) {
+                buttonEl.disabled = false;
+                buttonEl.innerText = origText;
+            }
+            // Auto play the pending song on successful activation
+            const target = pendingMusicPlayIndex !== null ? pendingMusicPlayIndex : currentSongIndex;
+            setTimeout(() => {
+                playMusic(target);
+            }, 300);
+        },
+        modal: {
+            ondismiss: function() {
+                if (buttonEl) {
+                    buttonEl.disabled = false;
+                    buttonEl.innerText = origText;
+                }
+            }
+        },
+        theme: {
+            color: "#e50914"
+        }
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.open();
+};
+
+function renderMusicList(songs) {
+    const list = document.getElementById('musicList');
+    if (!list) return;
+    const fragment = document.createDocumentFragment();
+    list.innerHTML = "";
+
+    const displayLimit = songs.slice(0, 200); 
+
+    displayLimit.forEach((song, i) => {
+        const isPlaying = (song.id === (currentPlaylist[currentSongIndex] ? currentPlaylist[currentSongIndex].id : null));
+        const div = document.createElement('div');
+        div.className = 'song-item' + (isPlaying ? ' active' : '');
+        
+        div.innerHTML = `<img src="${song.poster || ''}" referrerpolicy="no-referrer" loading="lazy" class="song-img" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=100&auto=format&fit=crop&q=60';" onclick="openModal('${song.poster}', event)">
+                         <div class="song-text-container" onclick="playMusic(${i})">
+                             <strong>${song.title}</strong>
+                             <small>${song.movie || ''}</small>
+                         </div>`;
+        fragment.appendChild(div);
+    });
+
+    list.appendChild(fragment);
+}
+
+function openModal(imgSrc, event) { 
+    if (event) event.stopPropagation(); 
+    document.getElementById('modalImg').src = imgSrc; 
+    document.getElementById('imageModal').style.display = 'flex'; 
+    const miniPlayer = document.getElementById('miniPlayer');
+    if (miniPlayer && currentPlaylist && currentPlaylist.length > 0) {
+        miniPlayer.style.display = 'flex';
+        miniPlayer.style.bottom = '0px';
+    }
+}
+
+function closeModal() { 
+    document.getElementById('imageModal').style.display = 'none'; 
+}
+
+function playMusic(index, isInitial = false) {
+    if (!currentPlaylist || index >= currentPlaylist.length) return;
+
+    // Gate: Check VIP Subscription before playback
+    if (!isVipSubscribed()) {
+        pendingMusicPlayIndex = index;
+        openSubscriptionModal();
+        return;
+    }
+
+    const song = currentPlaylist[index]; 
+    currentSongIndex = index;
+
+    audio.src = `https://www.googleapis.com/drive/v3/files/${song.id}?alt=media&key=AIzaSyAwS9f57z785lDD9aKedEEJVol_-P518v0`;
+    document.getElementById('nowPlaying').innerText = song.title + (song.movie ? ` • ${song.movie}` : '');
+    
+    const miniPlayer = document.getElementById('miniPlayer');
+    if (miniPlayer) {
+        miniPlayer.style.display = 'flex';
+        miniPlayer.style.bottom = '0px';
+    }
+    
+    if (document.getElementById('imageModal').style.display === 'flex') {
+        document.getElementById('modalImg').src = song.poster;
+    }
+    
+    const playPromise = audio.play(); 
+    if (playPromise !== undefined) {
+        playPromise.then(() => {
+            setPlayPauseIcon(true);
+        }).catch(err => {
+            setPlayPauseIcon(false);
+        });
+    }
+
+    renderMusicList(currentPlaylist);
+    
+    setTimeout(() => {
+        const activeElement = document.querySelector('.song-item.active');
+        if (activeElement) activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 120);
+}
+
+function nextSong() { 
+    if (currentPlaylist.length === 0) return;
+    if (!isVipSubscribed()) {
+        openSubscriptionModal();
+        return;
+    }
+    currentSongIndex = (currentSongIndex + 1) % currentPlaylist.length; 
+    playMusic(currentSongIndex); 
+}
+
+function prevSong() { 
+    if (currentPlaylist.length === 0) return;
+    if (!isVipSubscribed()) {
+        openSubscriptionModal();
+        return;
+    }
+    currentSongIndex = (currentSongIndex - 1 + currentPlaylist.length) % currentPlaylist.length; 
+    playMusic(currentSongIndex); 
+}
+
+function togglePlay() {
+    if (!isVipSubscribed()) {
+        pendingMusicPlayIndex = currentSongIndex;
+        openSubscriptionModal();
+        return;
+    }
+    if (!audio.src && currentPlaylist.length > 0) {
+        playMusic(currentSongIndex);
+        return;
+    }
+    if (audio.paused) {
+        audio.play().then(() => {
+            setPlayPauseIcon(true); 
+        }).catch(() => {});
+    } else {
+        audio.pause();
+        setPlayPauseIcon(false);
+    }
+}
+
+audio.addEventListener('timeupdate', () => {
+    if (!isNaN(audio.duration) && audio.duration > 0) {
+        range.value = (audio.currentTime / audio.duration) * 100;
+        curTimeSpan.innerText = formatTime(audio.currentTime);
+        durTimeSpan.innerText = formatTime(audio.duration);
+    }
+});
+
+audio.addEventListener('loadedmetadata', () => {
+    durTimeSpan.innerText = formatTime(audio.duration);
+});
+
+range.addEventListener('input', () => {
+    if (!isNaN(audio.duration)) {
+        audio.currentTime = (range.value / 100) * audio.duration;
+    }
+});
+
+audio.addEventListener('ended', nextSong);
+
+function toggleSidebar() { 
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+    if (!sidebar) return;
+    if (sidebar.classList.contains("open")) {
+        sidebar.classList.remove("open");
+        if (overlay) overlay.style.display = "none";
+        document.body.style.overflow = "";
+    } else {
+        sidebar.classList.add("open");
+        if (overlay) overlay.style.display = "block";
+        document.body.style.overflow = "hidden";
+    }
+}
+
+function loadCategories() { 
+    const menuContainer = document.getElementById("sidebarMenuItems") || document.getElementById("sidebar");
+    if (!menuContainer) return;
+    menuContainer.querySelectorAll('a[data-dynamic-cat="1"]').forEach(el => el.remove());
+    [...new Set(songsList.map(item => item.category))].filter(Boolean).forEach(cat => { 
+        const a = document.createElement("a"); 
+        a.href = "javascript:void(0)"; 
+        a.setAttribute("data-dynamic-cat", "1");
+        a.innerHTML = `<i class="fa-solid fa-compact-disc" style="color: #ff3b30;"></i> <span>${cat}</span>`; 
+        
+        a.onclick = (e) => { 
+            e.preventDefault(); 
+            e.stopPropagation(); 
+            filterByCategory(cat);
+            toggleSidebar();
+        }; 
+        menuContainer.appendChild(a); 
+    }); 
+}
+
+function filterByCategory(cat) { 
+    audio.pause(); 
+    audio.currentTime = 0;
+    setPlayPauseIcon(false);
+    document.getElementById('nowPlaying').innerText = "Select a song (" + cat + ")";
+    
+    const filteredSongs = shuffleArray(currentQueue.filter(s => s.category === cat));
+    currentPlaylist = filteredSongs;
+    currentSongIndex = 0; 
+    
+    renderMusicList(currentPlaylist); 
+}
+
+let searchTimeout;
+function filterMusicList() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        let val = document.getElementById('musicSearch').value.toLowerCase().trim();
+        if (!val) {
+            currentPlaylist = currentQueue;
+        } else {
+            let filtered = currentQueue.filter(s => 
+                (s.title && s.title.toLowerCase().includes(val)) || 
+                (s.movie && s.movie.toLowerCase().includes(val)) ||
+                (s.category && s.category.toLowerCase().includes(val))
+            );
+            currentPlaylist = filtered; 
+        }
+        renderMusicList(currentPlaylist); 
+    }, 300);
+}
+
+function stopMusic() {
+    audio.pause(); 
+    audio.currentTime = 0;
+    setPlayPauseIcon(false);
+    document.getElementById('miniPlayer').style.display = 'none';
+}
+  
+function showAllSongs() { 
+    currentPlaylist = shuffleArray(currentQueue); 
+    renderMusicList(currentPlaylist); 
+    toggleSidebar(); 
+}
+
+loadMusic();
+</script>
+
+<!-- Subscription Alert Modal Popup matching sub.jpg -->
+<div id="vipSubscriptionModal" class="sub-alert-overlay" onclick="window.closeSubscriptionModal()">
+    <div class="sub-alert-card" onclick="event.stopPropagation()">
+        <!-- Pink/Red Rounded Square with Question Mark Icon -->
+        <div class="sub-alert-icon-box">
+            <span>?</span>
+        </div>
+
+        <h3 class="sub-alert-title">Subscription Alert!</h3>
+        <p class="sub-alert-desc">Please subscribe a plan to view our paid items</p>
+
+        <div class="sub-alert-btn-group">
+            <button type="button" class="sub-alert-btn-cancel" onclick="window.closeSubscriptionModal()">Cancel</button>
+            <button type="button" class="sub-alert-btn-subscribe" onclick="window.goToSubscriptionSection()">Subscribe Now</button>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Alert Popup UI (Success Notification) -->
+<div id="customAlert" class="custom-alert-overlay">
+  <div class="custom-alert-box">
+    <div class="icon">✓</div>
+    <h3>Subscription Activated!</h3>
+    <p>VIP Active! Enjoy Unlimited Songs & Ad-Free Streaming.</p>
+  </div>
+</div>
+
+</body>
+</html>
