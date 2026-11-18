@@ -1,0 +1,90 @@
+export type VideoPlayerType = 'video' | 'yt' | 'drc' | 'gdrive';
+
+export interface Episode {
+  title: string;
+  link?: string;
+  url?: string;
+  video?: string;
+}
+
+export interface Movie {
+  id: string;
+  title: string;
+  originalTitle?: string;
+  poster: string;
+  backdrop?: string;
+  rating: string;
+  year?: number;
+  duration?: string;
+  category: string;
+  categoryLabel: string;
+  genres: string[];
+  description?: string;
+  cast: string[];
+  director?: string;
+  audioLanguages?: string[];
+  videoId?: string;
+  videoUrl: string;
+  videoType?: VideoPlayerType;
+  videoSourceId?: string;
+  video?: string;
+  yt?: string;
+  drc?: string;
+  episodes?: Episode[];
+  streamServers: { name: string; quality: string; url: string; type?: VideoPlayerType }[];
+  downloadLinks?: { quality: string; size: string; resolution: string; url: string }[];
+  isFeatured?: boolean;
+}
+
+export interface AdCreative {
+  id: string;
+  title: string;
+  tagline: string;
+  description: string;
+  advertiser: string;
+  rating: number;
+  reviewsCount: string;
+  badge: string; // e.g., "AD · Start.io", "Sponsored"
+  ctaText: string;
+  ctaUrl: string;
+  icon: string;
+  mediaImage: string;
+  mediaVideo?: string;
+  appCategory: string;
+  appSize?: string;
+  installs?: string;
+}
+
+export interface StartIoConfig {
+  appId: string;
+  enableBanner: boolean;
+  enableNative: boolean;
+  enableInterstitial: boolean;
+  interstitialSkipCountdown: number; // e.g. 5 seconds
+  interstitialFrequency: 'every_click' | 'every_2_clicks';
+  testMode: boolean;
+  bannerPosition: 'bottom' | 'top';
+  customAdUrl?: string; // Optional custom SmartLink or advertiser URL
+}
+
+export interface AdStats {
+  bannerImpressions: number;
+  nativeImpressions: number;
+  interstitialImpressions: number;
+  clicks: number;
+  lastAdTime: number | null;
+}
+
+export interface AdMobConfig {
+  enabled: boolean;
+  app_id: string;
+  banner_ad_unit: string;
+  interstitial_ad_unit: string;
+  rewarded_ad_unit: string;
+  banner_enabled: boolean;
+  interstitial_enabled: boolean;
+  rewarded_enabled: boolean;
+  interstitial_frequency?: number; // e.g. every 15 movie clicks
+  rewarded_interval_minutes?: number; // e.g. every 10-12 minutes
+}
+
