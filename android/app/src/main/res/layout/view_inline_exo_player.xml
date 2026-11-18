@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/inlineExoRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000"
+    android:clickable="true"
+    android:focusable="true"
+    android:keepScreenOn="true"
+    android:visibility="gone">
+
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/inlineExoPlayerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:auto_show="true"
+        app:hide_on_touch="true"
+        app:resize_mode="fit"
+        app:show_buffering="never"
+        app:show_timeout="3500"
+        app:surface_type="texture_view"
+        app:use_controller="true" />
+
+    <!-- Top Overlay Bar (Full controls in Fullscreen Landscape, minimal Preview badge in Portrait) -->
+    <LinearLayout
+        android:id="@+id/inlineExoTopBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:background="#88000000"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="10dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="6dp">
+
+        <ImageButton
+            android:id="@+id/inlineExoExitFsBtn"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Exit Fullscreen"
+            android:padding="6dp"
+            android:src="@android:drawable/ic_menu_revert"
+            android:visibility="gone"
+            app:tint="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/inlineExoTitleText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Playing Video"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/inlineExoPreviewBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp"
+            android:background="#CCFFB703"
+            android:paddingStart="8dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="3dp"
+            android:text="Free Preview: 20s"
+            android:textColor="#000000"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/inlineExoSpeedBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:layout_marginEnd="6dp"
+            android:background="#661E293B"
+            android:gravity="center"
+            android:paddingStart="9dp"
+            android:paddingEnd="9dp"
+            android:text="1x"
+            android:textColor="#00D2FF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/inlineExoResizeBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:layout_marginEnd="6dp"
+            android:background="#661E293B"
+            android:gravity="center"
+            android:paddingStart="9dp"
+            android:paddingEnd="9dp"
+            android:text="FIT"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <ImageButton
+            android:id="@+id/inlineExoRotateBtn"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Rotate Screen"
+            android:padding="5dp"
+            android:src="@android:drawable/ic_menu_rotate"
+            android:visibility="gone"
+            app:tint="#FFFFFF" />
+    </LinearLayout>
+
+    <!-- Center Buffering Progress Indicator -->
+    <LinearLayout
+        android:id="@+id/inlineExoLoadingOverlay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="#99000000"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="14dp"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:indeterminate="true" />
+
+        <TextView
+            android:id="@+id/inlineExoLoadingText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Buffering..."
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+</FrameLayout>
